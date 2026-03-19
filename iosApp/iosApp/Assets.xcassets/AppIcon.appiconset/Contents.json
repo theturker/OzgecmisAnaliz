@@ -1,7 +1,7 @@
 {
   "images" : [
     {
-      "filename" : "Adsız tasarım 1.png",
+      "filename" : "image22.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -13,7 +13,7 @@
           "value" : "dark"
         }
       ],
-      "filename" : "Adsız tasarım 2.png",
+      "filename" : "image33.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -25,7 +25,7 @@
           "value" : "tinted"
         }
       ],
-      "filename" : "Adsız tasarım.png",
+      "filename" : "image44.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"

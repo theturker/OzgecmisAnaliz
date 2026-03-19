@@ -8,7 +8,8 @@ struct ComposeView: UIViewControllerRepresentable {
         MainViewControllerKt.setDocumentPickerLauncher(launcher: {
             DocumentPickerHelper.shared.presentDocumentPicker(from: vc)
         })
-        vc.view.backgroundColor = UIColor(red: 250/255, green: 250/255, blue: 250/255, alpha: 1)
+        // Tema ile uyumlu arka plan (light/dark otomatik).
+        vc.view.backgroundColor = UIColor.systemBackground
         return vc
     }
 
@@ -16,8 +17,8 @@ struct ComposeView: UIViewControllerRepresentable {
 }
 
 struct ContentView: View {
-    // Uygulama arka plan rengi (Surface #FAFAFA) – safe area üst/alt siyah görünmesin
-    private static let surfaceColor = Color(red: 250/255, green: 250/255, blue: 250/255)
+    // Safe area üst/alt bölgeleri sistem bar renkleriyle uyumlu olsun.
+    private static var surfaceColor: Color { Color(UIColor.systemBackground) }
 
     var body: some View {
         ZStack {

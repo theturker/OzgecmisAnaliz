@@ -1,6 +1,8 @@
 package com.alperenturker.cviews.presentation.analysis
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -11,13 +13,17 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import com.alperenturker.cviews.domain.model.CvAnalysis
 import com.alperenturker.cviews.presentation.ui.components.BackButton
+import com.alperenturker.cviews.presentation.ui.components.PrimaryButton
+import com.alperenturker.cviews.presentation.ui.components.SecondaryButton
 import com.alperenturker.cviews.presentation.ui.components.KeywordChip
 import com.alperenturker.cviews.presentation.ui.components.ProfileSummaryCard
 import com.alperenturker.cviews.presentation.ui.components.ScoreBreakdownCard
@@ -25,6 +31,7 @@ import com.alperenturker.cviews.presentation.ui.components.ScoreCard
 import com.alperenturker.cviews.presentation.ui.components.SectionHeader
 import com.alperenturker.cviews.presentation.ui.components.StrengthWeaknessItem
 import com.alperenturker.cviews.presentation.ui.components.SuggestionCard
+import com.alperenturker.cviews.presentation.ui.theme.AppShape
 import com.alperenturker.cviews.presentation.ui.theme.Spacing
 import com.alperenturker.cviews.util.putTextToClipboard
 
@@ -32,6 +39,10 @@ import com.alperenturker.cviews.util.putTextToClipboard
 fun AnalysisScreen(
     analysis: CvAnalysis,
     onBackClick: () -> Unit,
+    draftText: String?,
+    isDraftInProgress: Boolean,
+    draftError: String?,
+    onGenerateDraftClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val scrollState = rememberScrollState()
@@ -168,6 +179,64 @@ fun AnalysisScreen(
             analysis.missingKeywords.forEach { keyword ->
                 KeywordChip(keyword = keyword)
             }
+        }
+
+        Spacer(modifier = Modifier.height(Spacing.xl))
+        SectionHeader(
+            title = "İyileştirilmiş CV Taslağı",
+            subtitle = "Analiz sonuçlarına göre kopyalayabileceğiniz bir taslak metin üretin."
+        )
+        Spacer(modifier = Modifier.height(Spacing.sm))
+
+        PrimaryButton(
+            text = if (isDraftInProgress) "Taslak oluşturuluyor..." else "CV Taslağını Oluştur",
+            onClick = onGenerateDraftClick,
+            enabled = !isDraftInProgress,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        if (isDraftInProgress) {
+            Spacer(modifier = Modifier.height(Spacing.sm))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                CircularProgressIndicator()
+            }
+        }
+
+        if (draftError != null) {
+            Spacer(modifier = Modifier.height(Spacing.sm))
+            Text(
+                text = draftError,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
+
+        if (draftText != null) {
+            Spacer(modifier = Modifier.height(Spacing.md))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(AppShape.medium)
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+                    .padding(Spacing.md),
+            ) {
+                Text(
+                    text = draftText,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+
+            Spacer(modifier = Modifier.height(Spacing.sm))
+            SecondaryButton(
+                text = "Taslağı Kopyala",
+                onClick = { putTextToClipboard(draftText) },
+                enabled = !isDraftInProgress,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
 
         Spacer(modifier = Modifier.height(Spacing.xxl))

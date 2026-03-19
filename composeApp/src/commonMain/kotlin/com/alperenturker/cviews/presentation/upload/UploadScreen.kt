@@ -53,7 +53,7 @@ fun UploadScreen(
                     Brush.verticalGradient(
                         colors = listOf(
                             AppColors.Primary.copy(alpha = 0.1f),
-                            AppColors.Surface,
+                            MaterialTheme.colorScheme.surface,
                         ),
                     ),
                 )

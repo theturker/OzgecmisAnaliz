@@ -17,6 +17,11 @@ data class CvAnalysis(
     val weaknesses: List<StrengthWeaknessItem>,
     val improvementSuggestions: List<ImprovementSuggestion>,
     val missingKeywords: List<String>,
+    /**
+     * On-demand olarak oluşturulan iyileştirilmiş CV taslağı.
+     * History'ye kaydedilebilir; eski kayıtlar için default null olmalı.
+     */
+    val improvedCvText: String? = null,
 )
 
 @Serializable
