@@ -38,6 +38,8 @@ fun UploadScreen(
     onBackClick: () -> Unit,
     isAnalyzing: Boolean = false,
     analysisError: String? = null,
+    canAnalyzeNow: Boolean = true,
+    remainingCooldownMs: Long = 0L,
     modifier: Modifier = Modifier,
 ) {
     var targetRole by rememberSaveable { mutableStateOf("") }
@@ -107,7 +109,7 @@ fun UploadScreen(
             value = targetRole,
             onValueChange = { targetRole = it },
             label = { Text("Hedef rol *") },
-            placeholder = { Text("Örn: Senior Android Developer") },
+            placeholder = { Text("Örn: Senior iOS Developer") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             supportingText = if (targetRole.isBlank() && selectedFileName != null) {
@@ -116,11 +118,39 @@ fun UploadScreen(
             isError = targetRole.isBlank() && selectedFileName != null,
         )
 
+        if (!canAnalyzeNow) {
+            Spacer(modifier = Modifier.height(Spacing.md))
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f), shape = MaterialTheme.shapes.medium)
+                    .padding(Spacing.md),
+            ) {
+                Text(
+                    text = "Yeni analiz için bekleme süresi",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Spacer(modifier = Modifier.height(Spacing.xs))
+                Text(
+                    text = formatDuration(remainingCooldownMs),
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Spacer(modifier = Modifier.height(Spacing.xs))
+                Text(
+                    text = "Her yeni analiz arasında 48 saat bekleme süresi vardır.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
         Spacer(modifier = Modifier.height(Spacing.xl))
         PrimaryButton(
             text = if (isAnalyzing) "Analiz ediliyor..." else "Analiz Et",
             onClick = { onAnalyzeClick(targetRole.takeIf { it.isNotBlank() }) },
-            enabled = !isAnalyzing && selectedFileName != null && targetRole.isNotBlank(),
+            enabled = !isAnalyzing && selectedFileName != null && targetRole.isNotBlank() && canAnalyzeNow,
         )
         if (isAnalyzing) {
             Spacer(modifier = Modifier.height(Spacing.md))
@@ -134,4 +164,12 @@ fun UploadScreen(
         Spacer(modifier = Modifier.height(Spacing.xxl))
         }
     }
+}
+
+private fun formatDuration(remainingMs: Long): String {
+    val totalSeconds = (remainingMs / 1000).coerceAtLeast(0L)
+    val hours = totalSeconds / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    val seconds = totalSeconds % 60
+    return "${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}"
 }

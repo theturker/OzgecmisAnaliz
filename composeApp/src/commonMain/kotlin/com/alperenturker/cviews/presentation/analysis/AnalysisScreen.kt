@@ -37,14 +37,37 @@ import com.alperenturker.cviews.util.putTextToClipboard
 
 @Composable
 fun AnalysisScreen(
-    analysis: CvAnalysis,
+    analysis: CvAnalysis?,
     onBackClick: () -> Unit,
+    onCreateAnalysisClick: () -> Unit,
     draftText: String?,
     isDraftInProgress: Boolean,
     draftError: String?,
     onGenerateDraftClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    if (analysis == null) {
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(Spacing.lg),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            SectionHeader(
+                title = "Henüz analiziniz yok",
+                subtitle = "İlk CV analizinizi başlatmak için aşağıdaki butona tıklayın.",
+            )
+            Spacer(modifier = Modifier.height(Spacing.lg))
+            PrimaryButton(
+                text = "CV Yükle ve Analiz Et",
+                onClick = onCreateAnalysisClick,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        return
+    }
+
     val scrollState = rememberScrollState()
     val s = analysis.atsScore
     val p = analysis.profile

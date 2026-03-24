@@ -39,7 +39,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.painterResource
 import cviews.composeapp.generated.resources.*
-import com.alperenturker.cviews.data.mock.MockData
 import com.alperenturker.cviews.presentation.ui.components.PrimaryButton
 import com.alperenturker.cviews.presentation.ui.components.SecondaryButton
 import com.alperenturker.cviews.presentation.ui.theme.AppColors
@@ -48,7 +47,6 @@ import com.alperenturker.cviews.presentation.ui.theme.Spacing
 @Composable
 fun LandingScreen(
     onUploadClick: () -> Unit,
-    onExampleAnalysisClick: () -> Unit,
     onHistoryClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -118,7 +116,6 @@ fun LandingScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             PrimaryButton(text = "CV Yükle", onClick = onUploadClick)
-            SecondaryButton(text = "Örnek Analiz", onClick = onExampleAnalysisClick)
             onHistoryClick?.let { SecondaryButton(text = "Geçmiş", onClick = it) }
         }
 
@@ -139,7 +136,7 @@ fun LandingScreen(
             Icons.Default.Description,
             Icons.Default.Lightbulb,
         )
-        MockData.landingFeatures.forEachIndexed { index, feature ->
+        featureDescriptions.keys.toList().forEachIndexed { index, feature ->
             val expanded = expandedFeatureIndex == index
             Column(modifier = Modifier.fillMaxWidth()) {
                 Row(

@@ -13,9 +13,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import com.alperenturker.cviews.currentTimeMillis
 import com.alperenturker.cviews.data.pdf.extractTextFromPdf
 import com.alperenturker.cviews.data.repository.GroqRepository
-import com.alperenturker.cviews.data.mock.MockData
 import com.alperenturker.cviews.domain.model.CvAnalysis
 import com.alperenturker.cviews.domain.model.Screen
 import com.alperenturker.cviews.domain.model.routeToScreen
@@ -29,6 +29,7 @@ import com.alperenturker.cviews.presentation.upload.UploadScreen
 import com.alperenturker.cviews.util.saveHistoryJson
 import com.alperenturker.cviews.util.loadHistoryJson
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.Modifier
@@ -37,6 +38,7 @@ import kotlinx.serialization.json.Json
 
 private val historyJson = Json { ignoreUnknownKeys = true }
 private val analysisListSerializer = ListSerializer(CvAnalysis.serializer())
+private const val ANALYSIS_COOLDOWN_MS = 48 * 60 * 60 * 1000L
 
 private fun saveAnalyses(list: List<CvAnalysis>) {
     saveHistoryJson(historyJson.encodeToString(analysisListSerializer, list))
@@ -54,8 +56,8 @@ fun AppNavigation(
     var currentRoute by rememberSaveable { mutableStateOf(startScreen.toRoute()) }
     val currentScreen = routeToScreen(currentRoute)
     val analyses = remember { mutableStateListOf<CvAnalysis>() }
-    val sampleAnalysis = MockData.sampleAnalysis
     val scope = rememberCoroutineScope()
+    var nowMs by remember { mutableStateOf(currentTimeMillis()) }
     var analysisInProgress by remember { mutableStateOf(false) }
     var analysisError by remember { mutableStateOf<String?>(null) }
     val groqRepo = remember { GroqRepository() }
@@ -77,13 +79,24 @@ fun AppNavigation(
             }
         }
     }
+    LaunchedEffect(Unit) {
+        while (true) {
+            nowMs = currentTimeMillis()
+            delay(1000)
+        }
+    }
+
+    val latestAnalysisTime = analyses.maxOfOrNull { it.uploadDate }
+    val remainingCooldownMs = latestAnalysisTime
+        ?.let { (it + ANALYSIS_COOLDOWN_MS - nowMs).coerceAtLeast(0L) }
+        ?: 0L
+    val canAnalyzeNow = remainingCooldownMs == 0L
 
     Column(modifier = Modifier.fillMaxSize()) {
         Box(modifier = Modifier.weight(1f)) {
             when (val screen = currentScreen) {
                 is Screen.Landing -> LandingScreen(
                     onUploadClick = { currentRoute = Screen.Upload.toRoute() },
-                    onExampleAnalysisClick = { currentRoute = Screen.Analysis(sampleAnalysis.id).toRoute() },
                     onHistoryClick = { currentRoute = Screen.History.toRoute() },
                 )
                 is Screen.Upload -> UploadScreen(
@@ -93,6 +106,10 @@ fun AppNavigation(
                         val (bytes, name) = selectedPdf ?: return@UploadScreen
                         if (bytes == null) return@UploadScreen
                         if (targetRole.isNullOrBlank()) return@UploadScreen
+                        if (!canAnalyzeNow) {
+                            analysisError = "Yeni analiz için ${formatDuration(remainingCooldownMs)} bekleyin."
+                            return@UploadScreen
+                        }
                         analysisError = null
                         analysisInProgress = true
                         scope.launch {
@@ -119,6 +136,8 @@ fun AppNavigation(
                     onBackClick = { currentRoute = Screen.Landing.toRoute() },
                     isAnalyzing = analysisInProgress,
                     analysisError = analysisError,
+                    canAnalyzeNow = canAnalyzeNow,
+                    remainingCooldownMs = remainingCooldownMs,
                 )
                 is Screen.History -> HistoryScreen(
                     analyses = analyses,
@@ -130,18 +149,19 @@ fun AppNavigation(
                     onBackClick = { currentRoute = Screen.Landing.toRoute() },
                 )
                 is Screen.Analysis -> {
-                    val analysis = analyses.find { it.id == screen.analysisId } ?: sampleAnalysis
-                    val draftText = analysis.improvedCvText ?: generatedDrafts[analysis.id]
-                    val showDraftProgress = draftInProgress && draftAnalysisId == analysis.id
+                    val analysis = analyses.find { it.id == screen.analysisId }
+                    val draftText = analysis?.improvedCvText ?: analysis?.id?.let { generatedDrafts[it] }
+                    val showDraftProgress = analysis != null && draftInProgress && draftAnalysisId == analysis.id
 
                     AnalysisScreen(
                         analysis = analysis,
                         onBackClick = { currentRoute = Screen.Landing.toRoute() },
+                        onCreateAnalysisClick = { currentRoute = Screen.Upload.toRoute() },
                         draftText = draftText,
                         isDraftInProgress = showDraftProgress,
                         draftError = draftError,
                         onGenerateDraftClick = {
-                            if (!draftInProgress) {
+                            if (analysis != null && !draftInProgress) {
                                 draftError = null
                                 draftInProgress = true
                                 draftAnalysisId = analysis.id
@@ -185,7 +205,7 @@ fun AppNavigation(
                 when (tab) {
                     BottomTab.Upload -> currentRoute = Screen.Upload.toRoute()
                     BottomTab.Analysis -> {
-                        val targetId = analyses.firstOrNull()?.id ?: sampleAnalysis.id
+                        val targetId = analyses.firstOrNull()?.id ?: "no-analysis"
                         currentRoute = Screen.Analysis(targetId).toRoute()
                     }
                     BottomTab.History -> currentRoute = Screen.History.toRoute()
@@ -193,4 +213,12 @@ fun AppNavigation(
             },
         )
     }
+}
+
+private fun formatDuration(remainingMs: Long): String {
+    val totalSeconds = (remainingMs / 1000).coerceAtLeast(0L)
+    val hours = totalSeconds / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    val seconds = totalSeconds % 60
+    return "${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}"
 }
